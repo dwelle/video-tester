@@ -48,6 +48,11 @@
       padding-bottom: 15px;
     }
 
+    .filename .copy {
+      font-weight: bold;
+      ;
+    }
+
     video {
       width: 100%;
       display: none;
@@ -64,11 +69,27 @@
   </label>
   <script>
 
+    const selectElement = (elem) => {
+      const selection = window.getSelection();
+      const range = document.createRange();
+
+      range.selectNodeContents(elem);
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    };
+
+    // https://stackoverflow.com/a/4652513/927631
+    const aspectRatio = (numerator, denominator) => {
+      const gcd = (a, b) => b ? gcd(b, a % b) : a;
+      d = gcd(numerator, denominator);
+      return [numerator / d, denominator / d].join(":");
+    }
+
     const createVideo = (file) => {
-      const name = file.name;
-      const filenameDiv = document.createElement('div');
-      filenameDiv.className = "filename";
-      filenameDiv.textContent = name;
+
+      const filesize = (file.size / 1024 / 1024).toPrecision(3);
 
       const video = document.createElement('video');
       video.autoplay = "true";
@@ -80,8 +101,16 @@
       const videoCont = document.createElement('div');
       videoCont.className = 'video-cont';
 
-      videoCont.appendChild(filenameDiv);
       videoCont.appendChild(video);
+
+      video.onloadedmetadata = () => {
+        const name = file.name;
+        const filenameDiv = document.createElement('div');
+        filenameDiv.className = "filename";
+        const { videoWidth, videoHeight } = video;
+        filenameDiv.innerHTML = `<span class="copy">${name}</span> <small>(${videoWidth}x${videoHeight}, ${aspectRatio(videoWidth, videoHeight)}, ${filesize}Mb)</small>`;
+        videoCont.prepend(filenameDiv);
+      }
 
       return videoCont;
     }
@@ -110,6 +139,13 @@
       event.preventDefault()
       loadVideoFiles(event.dataTransfer.files);
     })
+
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('.copy')) {
+        selectElement(event.target);
+        document.execCommand('copy');
+      }
+    });
   </script>
 </body>
 
