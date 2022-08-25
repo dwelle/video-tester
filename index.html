@@ -12,6 +12,11 @@
       background: #fff;
     }
 
+    body.dark {
+      background: rgb(44, 44, 44);
+      color: #fff;
+    }
+
     body {
       display: flex;
       flex-direction: column;
@@ -62,12 +67,74 @@
       display: none;
     }
 
+    .theme-switcher {
+      display: flex;
+      gap: .5rem;
+      position: fixed;
+      top: 0;
+      right: 0;
+      user-select: none;
+      padding: 1rem;
+      pointer-events: none;
+    }
+
+    .theme-button {
+      pointer-events: all;
+    }
+
+    .theme-button.active {
+      font-weight: bold;
+      color: rgb(36, 181, 218);
+    }
+
   </style>
   <label class="wrapper" for="file">
+    <div class="theme-switcher">
+      <div class="theme-button" data-theme="auto">Auto</div>
+      <div class="theme-button" data-theme="light">Light</div>
+      <div class="theme-button" data-theme="dark">Dark</div>
+    </div>
     <div class="info">Click or drop video here<br><small>(multiple files supported)</small></div>
     <input type="file" id="file" multiple accept=".mov,.mp4,.wmv,.avi,.flv,.mkv,.webm,.mpeg,.ogg,.mpg,.ogg" />
   </label>
   <script>
+
+    const $ = document.querySelector.bind(document);
+    const $$ = document.querySelectorAll.bind(document);
+
+    let theme = localStorage.getItem('theme') || 'light';
+
+    const themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    themeMediaQuery.addListener(() => {
+      if (localStorage.getItem('theme') === 'auto') {
+        setBodyTheme(themeMediaQuery.matches ? 'dark' : 'light');
+      }
+    })
+
+    const setBodyTheme = (theme) => {
+      theme = theme === "auto" ? (themeMediaQuery.matches ? 'dark' : 'light') : theme;
+      document.body.classList.remove('dark', 'light');
+      document.body.classList.add(theme);
+    }
+
+    const setTheme = (theme) => {
+      [...$$('.theme-button')].forEach(node => node.classList.remove('active'));
+      $(`.theme-button[data-theme=${theme}]`).classList.add('active');
+      localStorage.setItem('theme', theme);
+
+      setBodyTheme(theme);
+    }
+
+    setTheme(theme)
+
+    document.addEventListener('click', (event) => {
+      const $button = event.target.closest('.theme-button');
+      if ($button) {
+        event.stopPropagation();
+        event.preventDefault();
+        setTheme($button.dataset.theme);
+      }
+    })
 
     const selectElement = (elem) => {
       const selection = window.getSelection();
@@ -116,7 +183,7 @@
     }
 
     const loadVideoFiles = (files) => {
-      const wrapper = document.querySelector(".wrapper");
+      const wrapper = $(".wrapper");
       wrapper.style.cursor = "auto";
       wrapper.replaceChildren();
 
@@ -125,7 +192,7 @@
       }
     }
 
-    const input = document.querySelector('input[type="file"]');
+    const input = $('input[type="file"]');
 
     input.addEventListener("change", event => {
       loadVideoFiles(event.target.files);
